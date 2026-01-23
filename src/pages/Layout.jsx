@@ -106,7 +106,6 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   const isActive = (path) => location.pathname === path;
-  const isMyAccountActive = isActive(createPageUrl("MyAccount")) || isActive(createPageUrl("CreateShipment"));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,36 +202,6 @@ export default function Layout({ children, currentPageName }) {
                   {item.name}
                 </Link>
               ))}
-              
-              {/* My Account Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
-                      isMyAccountActive
-                        ? "bg-blue-900 text-white shadow-md"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    My Account
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link to={createPageUrl("MyAccount")} className="cursor-pointer">
-                      <User className="w-4 h-4 mr-2" />
-                      Account Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to={createPageUrl("CreateShipment")} className="cursor-pointer">
-                      <Package className="w-4 h-4 mr-2" />
-                      Create Shipment
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
 
               <Link to={createPageUrl("ReserveMailbox")}>
                 <Button className="ml-4 bg-orange-500 hover:bg-orange-600 text-white shadow-md">
@@ -274,35 +243,6 @@ export default function Layout({ children, currentPageName }) {
                   {item.name}
                 </Link>
               ))}
-              
-              {/* My Account Section - Mobile */}
-              <div className="border-t border-gray-100 mt-2 pt-2">
-                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">My Account</div>
-                <Link
-                  to={createPageUrl("MyAccount")}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
-                    isActive(createPageUrl("MyAccount"))
-                      ? "text-blue-900 bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <User className="w-5 h-5" />
-                  Account Dashboard
-                </Link>
-                <Link
-                  to={createPageUrl("CreateShipment")}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
-                    isActive(createPageUrl("CreateShipment"))
-                      ? "text-blue-900 bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <Package className="w-5 h-5" />
-                  Create Shipment
-                </Link>
-              </div>
             </nav>
           )}
         </div>
