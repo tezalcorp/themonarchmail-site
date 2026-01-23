@@ -2,12 +2,169 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Monarch Mail</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Monarch Mail | Stone Oak</title>
+    <meta name="description" content="Mailbox rentals, shipping, printing, notary, U-Haul rentals and business services in Stone Oak / San Antonio." />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <header class="header">
+      <div class="container header-row">
+        <div class="brand">
+          <div class="logo">MM</div>
+          <div>
+            <div class="brand-title">Monarch Mail</div>
+            <div class="brand-subtitle">Business Services • Stone Oak</div>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <a href="#services">Services</a>
+          <a href="#reserve">Reserve Mailbox</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <p class="badge">20711 Wilderness Oak, Ste 107 • San Antonio, TX 78258</p>
+          <h1>Mailbox Rentals, Shipping & Business Services in Stone Oak</h1>
+          <p class="lead">
+            A local business hub for mailbox rentals, shipping, printing, notary, and more.
+          </p>
+
+          <div class="cta-row">
+            <a class="btn primary" href="#reserve">Reserve a Mailbox</a>
+            <a class="btn" href="tel:+12102655805">(210) 265-5805</a>
+          </div>
+
+          <div class="hours">
+            <div class="hours-title">Need help today?</div>
+            <div class="hours-text">
+              Call or stop by — we’ll get you set up fast.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="services" class="section">
+        <div class="container">
+          <h2>Services</h2>
+          <div class="grid">
+            <div class="card">
+              <h3>Mailbox Rentals</h3>
+              <p>Personal & business mailboxes with a real street address.</p>
+            </div>
+            <div class="card">
+              <h3>Shipping</h3>
+              <p>USPS, UPS, FedEx options — packing supplies available.</p>
+            </div>
+            <div class="card">
+              <h3>Printing</h3>
+              <p>Copies, scanning, labels, marketing materials and more.</p>
+            </div>
+            <div class="card">
+              <h3>Notary</h3>
+              <p>Convenient notary services (availability may vary).</p>
+            </div>
+            <div class="card">
+              <h3>U-Haul Rentals</h3>
+              <p>Pick up and drop off U-Haul rentals locally.</p>
+            </div>
+            <div class="card">
+              <h3>Business Services</h3>
+              <p>Packaging, document services, and support for small businesses.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="reserve" class="section alt">
+        <div class="container">
+          <h2>Reserve a Mailbox</h2>
+          <p class="lead">
+            To reserve your mailbox, bring the items below. We’ll handle the rest in-store.
+          </p>
+
+          <div class="two-col">
+            <div class="card">
+              <h3>What to bring (USPS Form 1583 requirements)</h3>
+              <ol class="checklist">
+                <li><strong>Two forms of ID</strong></li>
+                <li><strong>One must be a photo ID</strong> (Driver’s license, state ID, passport)</li>
+                <li><strong>Second ID</strong> (vehicle registration, voter card, lease/mortgage, insurance card, etc.)</li>
+                <li><strong>Business customers:</strong> business name + authorized users (if applicable)</li>
+              </ol>
+              <p class="note">
+                Questions? Call us and we’ll confirm what you’re bringing qualifies.
+              </p>
+              <div class="cta-row">
+                <a class="btn primary" href="tel:+12102655805">Call (210) 265-5805</a>
+                <a class="btn" href="#contact">Get directions</a>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Address</h3>
+              <p class="mono">
+                Monarch Mail<br/>
+                20711 Wilderness Oak, Ste 107<br/>
+                San Antonio, TX 78258
+              </p>
+              <a class="btn" target="_blank" rel="noopener noreferrer"
+                 href="https://www.google.com/maps?q=20711+Wilderness+Oak+Ste+107+San+Antonio+TX+78258">
+                Open in Google Maps
+              </a>
+
+              <div class="divider"></div>
+
+              <h3>Email</h3>
+              <p><a href="mailto:contact@themonarchmail.com">contact@themonarchmail.com</a></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" class="section">
+        <div class="container">
+          <h2>Contact</h2>
+          <div class="contact-card">
+            <div>
+              <div class="contact-title">Monarch Mail</div>
+              <div class="contact-subtitle">Stone Oak / San Antonio</div>
+              <div class="contact-lines">
+                <div>📍 20711 Wilderness Oak, Ste 107, San Antonio, TX 78258</div>
+                <div>📞 <a href="tel:+12102655805">(210) 265-5805</a></div>
+                <div>✉️ <a href="mailto:contact@themonarchmail.com">contact@themonarchmail.com</a></div>
+              </div>
+            </div>
+            <div class="contact-actions">
+              <a class="btn primary" href="tel:+12102655805">Call now</a>
+              <a class="btn" target="_blank" rel="noopener noreferrer"
+                 href="https://www.google.com/maps?q=20711+Wilderness+Oak+Ste+107+San+Antonio+TX+78258">
+                Directions
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <div>© <span id="y"></span> Monarch Mail. All rights reserved.</div>
+        <div class="footer-links">
+          <a href="#services">Services</a>
+          <a href="#reserve">Reserve Mailbox</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('y').textContent = new Date().getFullYear();
+    </script>
   </body>
 </html>
