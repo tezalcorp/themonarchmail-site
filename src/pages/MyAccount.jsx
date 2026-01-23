@@ -1,898 +1,1439 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, MapPin, Plus, Trash2, Edit, CheckCircle, LogOut, Package, Clock, Download, Store, AlertCircle, FileCheck } from "lucide-react"; // Added FileCheck
-import { motion, AnimatePresence } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Package, CheckCircle, Download, Store, ArrowRight, AlertCircle, CheckCircle2, Shield, Plus, CreditCard } from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function MyAccount() {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  const [showPaymentCancelled, setShowPaymentCancelled] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const authenticated = await base44.auth.isAuthenticated();
-        setIsAuthenticated(authenticated);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        setIsAuthenticated(false);
-      }
-    };
-    checkAuth();
-
-    // Check for payment status in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    if (paymentStatus === 'success') {
-      setShowPaymentSuccess(true);
-      setTimeout(() => setShowPaymentSuccess(false), 5000);
-      // Clean up URL
-      window.history.replaceState({}, '', '/MyAccount');
-    } else if (paymentStatus === 'cancelled') {
-      setShowPaymentCancelled(true);
-      setTimeout(() => setShowPaymentCancelled(false), 5000);
-      // Clean up URL
-      window.history.replaceState({}, '', '/MyAccount');
-    }
-  }, []);
-
-  // Show loading while checking authentication
-  if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If not authenticated, show login prompt
-  if (isAuthenticated === false) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-0 shadow-xl">
-          <CardContent className="text-center py-12">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-blue-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
-            <p className="text-gray-600 mb-6">Please login or create an account to access your account page</p>
-            <Button
-              onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-              className="bg-blue-900 hover:bg-blue-800"
-            >
-              Login / Create Account
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Only render the full account page if authenticated
-  return <AuthenticatedMyAccount showPaymentSuccess={showPaymentSuccess} showPaymentCancelled={showPaymentCancelled} />;
+export default function CreateShipment() {
+  return <AuthenticatedCreateShipment />;
 }
 
-function AuthenticatedMyAccount({ showPaymentSuccess, showPaymentCancelled }) {
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [editingAddress, setEditingAddress] = useState(null);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [profileData, setProfileData] = useState({});
-  const [addressData, setAddressData] = useState({
-    label: "",
-    recipient_name: "",
-    company: "",
-    street_address: "",
-    street_address_2: "",
+function AuthenticatedCreateShipment() {
+  const [step, setStep] = useState(1);
+  const [fromAddress, setFromAddress] = useState({
+    name: "",
+    street1: "",
+    street2: "",
     city: "",
     state: "",
-    zip_code: "",
+    zip: "",
+    country: "US"
+  });
+  const [toAddress, setToAddress] = useState({
+    name: "",
+    street1: "",
+    street2: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "US",
     phone: ""
   });
-  const [saved, setSaved] = useState(false);
-  // Removed isAuthenticated state as it's handled by parent MyAccount
+  const [parcel, setParcel] = useState({
+    length: "",
+    width: "",
+    height: "",
+    weight: "",
+    weight_oz: "",
+    distance_unit: "in",
+    mass_unit: "lb"
+  });
+  // Removed: const [isMediaMail, setIsMediaMail] = useState(false);
+  // Removed: const [showMediaMailWarning, setShowMediaMailWarning] = useState(false);
+  const [rates, setRates] = useState([]);
+  const [selectedRate, setSelectedRate] = useState(null);
+  const [printLocation, setPrintLocation] = useState("home");
+  const [loading, setLoading] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [validationDialog, setValidationDialog] = useState(null);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(null);
+  const [originalUserAddress, setOriginalUserAddress] = useState(null);
+  const [showUpdateAddressPrompt, setShowUpdateAddressPrompt] = useState(false);
+  const [toAddressSearch, setToAddressSearch] = useState("");
+  const [showToAddressResults, setShowToAddressResults] = useState(false);
+  const [showManualToAddress, setShowManualToAddress] = useState(false);
+  const [showSaveAddressPrompt, setShowSaveAddressPrompt] = useState(false);
+  const [addressLabelToSave, setAddressLabelToSave] = useState("");
+  const [isToAddressFromSaved, setIsToAddressFromSaved] = useState(false);
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState(null); // New state for selected saved address ID
 
+  const searchRef = useRef(null); // Ref for the search input container
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading: userLoading, error: userError } = useQuery({
+  const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: async () => {
-      const userData = await base44.auth.me();
-      setProfileData({
-        full_name: userData.full_name || "",
-        email: userData.email || "",
-        phone: userData.phone || "",
-        business_name: userData.business_name || "",
-        street_address: userData.street_address || "",
-        street_address_2: userData.street_address_2 || "",
-        city: userData.city || "",
-        state: userData.state || "",
-        zip_code: userData.zip_code || ""
-      });
-      return userData;
-    },
-    // The `enabled` prop logic for this query needs to ensure `isAuthenticated` is true.
-    // Since this component is only rendered if `isAuthenticated` is true, we don't need
-    // to explicitly pass it here, but rather rely on the parent component's logic.
-    retry: false
+    queryFn: () => base44.auth.me()
   });
 
-  const { data: addresses = [] } = useQuery({
+  const { data: savedAddresses = [] } = useQuery({
     queryKey: ['savedAddresses'],
-    queryFn: async () => {
-      try {
-        const result = await base44.entities.SavedAddress.filter({ created_by: user?.email }, '-times_used');
-        return Array.isArray(result) ? result : [];
-      } catch (error) {
-        return [];
-      }
-    },
+    queryFn: () => base44.entities.SavedAddress.filter({ created_by: user?.email }, '-times_used'),
     enabled: !!user,
     initialData: []
   });
 
-  const { data: shippingLabels = [] } = useQuery({
-    queryKey: ['shippingLabels'],
-    queryFn: async () => {
-      try {
-        console.log("Fetching labels for user:", user?.email);
-        const result = await base44.entities.ShippingLabel.filter({ user_email: user?.email }, '-created_date');
-        console.log("Labels fetched:", result);
-        return Array.isArray(result) ? result : [];
-      } catch (error) {
-        console.error("Error fetching labels:", error);
-        return [];
+  // Pre-fill from address with user's profile information
+  useEffect(() => {
+    if (user && !fromAddress.name) {
+      const userAddr = {
+        name: user.full_name || "",
+        street1: user.street_address || "",
+        street2: user.street_address_2 || "",
+        city: user.city || "",
+        state: user.state || "",
+        zip: user.zip_code || "",
+        country: "US"
+      };
+      setFromAddress(userAddr);
+      setOriginalUserAddress(userAddr);
+    }
+  }, [user]);
+
+  // Handle clicks outside the search results to close them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowToAddressResults(false);
       }
-    },
-    enabled: !!user,
-    initialData: []
-  });
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
-  const { data: pendingShipments = [] } = useQuery({
-    queryKey: ['pendingShipments'],
-    queryFn: async () => {
-      try {
-        const result = await base44.entities.PendingShipment.filter({ created_by: user?.email }, '-created_date');
-        return Array.isArray(result) ? result : [];
-      } catch (error) {
-        return [];
+  // Filter saved addresses based on search
+  const filteredToAddresses = useMemo(() => {
+    if (!toAddressSearch) return savedAddresses;
+    const searchLower = toAddressSearch.toLowerCase();
+    return savedAddresses.filter(addr =>
+      addr.label.toLowerCase().includes(searchLower) ||
+      addr.recipient_name.toLowerCase().includes(searchLower) ||
+      (addr.company && addr.company.toLowerCase().includes(searchLower)) ||
+      (addr.street_address && addr.street_address.toLowerCase().includes(searchLower)) ||
+      (addr.city && addr.city.toLowerCase().includes(searchLower)) ||
+      (addr.state && addr.state.toLowerCase().includes(searchLower)) ||
+      (addr.zip_code && addr.zip_code.toLowerCase().includes(searchLower))
+    );
+  }, [toAddressSearch, savedAddresses]);
+
+  const hasAddressChanged = () => {
+    if (!originalUserAddress) return false;
+    return (
+      fromAddress.name !== originalUserAddress.name ||
+      fromAddress.street1 !== originalUserAddress.street1 ||
+      fromAddress.street2 !== originalUserAddress.street2 ||
+      fromAddress.city !== originalUserAddress.city ||
+      fromAddress.state !== originalUserAddress.state ||
+      fromAddress.zip !== originalUserAddress.zip
+    );
+  };
+
+  const updateUserProfile = async () => {
+    try {
+      await base44.auth.updateMe({
+        full_name: fromAddress.name,
+        street_address: fromAddress.street1,
+        street_address_2: fromAddress.street2,
+        city: fromAddress.city,
+        state: fromAddress.state,
+        zip_code: fromAddress.zip
+      });
+      setOriginalUserAddress(fromAddress);
+      setShowUpdateAddressPrompt(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile");
+    }
+  };
+
+  const calculateTotalWeight = () => {
+    const lbs = parseFloat(parcel.weight) || 0;
+    const oz = parseFloat(parcel.weight_oz) || 0;
+    let totalWeight = lbs + (oz / 16);
+
+    // Round up to 1 oz minimum (same as Shippo)
+    if (totalWeight > 0 && totalWeight < 0.0625) { // 0.0625 lbs = 1 oz
+      totalWeight = 0.0625;
+    }
+
+    return totalWeight;
+  };
+
+  const validateAddresses = async () => {
+    setValidating(true);
+    try {
+      const [fromValidation, toValidation] = await Promise.all([
+        base44.functions.invoke('validateAddress', { address: fromAddress }),
+        base44.functions.invoke('validateAddress', { address: toAddress })
+      ]);
+
+      // Helper function to check if addresses are essentially the same
+      const addressesMatch = (original, validated) => {
+        if (!validated) return true; // If no validated address, treat as a match for skipping correction dialog
+        return (
+          original.street1.toLowerCase().trim() === validated.street1.toLowerCase().trim() &&
+          original.city.toLowerCase().trim() === validated.city.toLowerCase().trim() &&
+          original.state.toLowerCase().trim() === validated.state.toLowerCase().trim() &&
+          original.zip.trim() === validated.zip.trim()
+        );
+      };
+
+      const fromHasValidatedSuggestion = !!fromValidation.data.validated;
+      const toHasValidatedSuggestion = !!toValidation.data.validated;
+
+      const fromNeedsCorrection = fromHasValidatedSuggestion &&
+        !addressesMatch(fromAddress, fromValidation.data.validated);
+
+      const toNeedsCorrection = toHasValidatedSuggestion &&
+        !addressesMatch(toAddress, toValidation.data.validated);
+
+      const fromHasErrors = !fromValidation.data.is_valid ||
+        (fromValidation.data.messages && fromValidation.data.messages.length > 0);
+
+      const toHasErrors = !toValidation.data.is_valid ||
+        (toValidation.data.messages && toValidation.data.messages.length > 0);
+
+      // Only show dialog if there are actual corrections or errors
+      if (fromNeedsCorrection || toNeedsCorrection || fromHasErrors || toHasErrors) {
+        setValidationDialog({
+          from: (fromNeedsCorrection || fromHasErrors) ? { ...fromValidation.data, original: fromAddress } : null,
+          to: (toNeedsCorrection || toHasErrors) ? { ...toValidation.data, original: toAddress } : null
+        });
+        setValidating(false);
+        return false;
       }
-    },
-    enabled: !!user,
-    initialData: []
-  });
 
-  const { data: mailboxReservation } = useQuery({
-    queryKey: ['mailboxReservation'],
-    queryFn: async () => {
-      try {
-        // This is a placeholder; adjust the filter criteria as per your actual backend logic
-        // For example, you might look for a reservation by user ID or email, and ensure it's active.
-        const result = await base44.entities.MailboxReservation.filter({ user_email: user?.email, status: 'active' });
-        return result.length > 0 ? result[0] : null; // Assuming one active reservation per user
-      } catch (error) {
-        console.error("Error fetching mailbox reservation:", error);
-        return null;
+      setValidating(false);
+      return true; // No significant corrections or errors, proceed
+    } catch (error) {
+      alert("Address validation failed. Please check your addresses.");
+      setValidating(false);
+      return false;
+    }
+  };
+
+  const executeGetRatesLogic = async () => {
+    const totalWeight = calculateTotalWeight();
+
+    const isValid = await validateAddresses();
+    if (!isValid) return;
+
+    setLoading(true);
+    try {
+      const parcelToSend = {
+        ...parcel,
+        weight: totalWeight.toString()
+      };
+      // Remove weight_oz as the backend only expects 'weight' in lbs
+      delete parcelToSend.weight_oz;
+
+      const response = await base44.functions.invoke('getAllShippingRates', {
+        from_address: fromAddress,
+        to_address: toAddress,
+        parcel: parcelToSend,
+        // Removed: is_media_mail: isMediaMail
+      });
+
+      if (response.data.success) {
+        setRates(response.data.rates || []);
+        setStep(2);
+      } else {
+        alert(response.data.error || "Failed to get rates");
       }
-    },
-    enabled: !!user,
-    initialData: null,
-    retry: false,
-  });
-
-  const updateProfileMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      setEditingProfile(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      alert("Error getting rates: " + error.message);
     }
-  });
+    setLoading(false);
+  };
 
-  const createAddressMutation = useMutation({
-    mutationFn: (data) => base44.entities.SavedAddress.create(data),
-    onSuccess: () => {
+  const handleGetRates = async () => {
+    // Check if address changed and prompt user
+    if (hasAddressChanged() && !showUpdateAddressPrompt) {
+      setShowUpdateAddressPrompt(true);
+      return;
+    }
+
+    // Check if to address is new and should be saved
+    if (!isToAddressFromSaved && toAddress.name && toAddress.street1 && toAddress.city && toAddress.state && toAddress.zip) {
+      setShowSaveAddressPrompt(true);
+      return;
+    }
+
+    await executeGetRatesLogic();
+  };
+
+  const continueWithoutUpdating = async () => {
+    setShowUpdateAddressPrompt(false);
+
+    // Check if to address is new and should be saved
+    if (!isToAddressFromSaved && toAddress.name && toAddress.street1 && toAddress.city && toAddress.state && toAddress.zip) {
+      setShowSaveAddressPrompt(true);
+      return;
+    }
+
+    await executeGetRatesLogic();
+  };
+
+  const saveToAddressAndContinue = async () => {
+    try {
+      const newAddress = await base44.entities.SavedAddress.create({
+        label: addressLabelToSave || toAddress.name,
+        recipient_name: toAddress.name,
+        company: "",
+        street_address: toAddress.street1,
+        street_address_2: toAddress.street2 || "",
+        city: toAddress.city,
+        state: toAddress.state,
+        zip_code: toAddress.zip,
+        country: toAddress.country,
+        phone: toAddress.phone,
+        times_used: 1
+      });
+
       queryClient.invalidateQueries({ queryKey: ['savedAddresses'] });
-      setShowAddressForm(false);
-      resetAddressForm();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }
-  });
+      setShowSaveAddressPrompt(false);
+      setAddressLabelToSave("");
+      setIsToAddressFromSaved(true);
+      setSelectedSavedAddressId(newAddress.id); // Set the ID for the newly saved address
 
-  const updateAddressMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SavedAddress.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savedAddresses'] });
-      setEditingAddress(null);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }
-  });
+      // Now continue with validation and getting rates
+      await executeGetRatesLogic();
 
-  const deleteAddressMutation = useMutation({
-    mutationFn: (id) => base44.entities.SavedAddress.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['savedAddresses'] });
+    } catch (error) {
+      console.error("Error saving address:", error);
+      alert("Failed to save address");
     }
-  });
+  };
 
-  const resetAddressForm = () => {
-    setAddressData({
-      label: "",
-      recipient_name: "",
-      company: "",
-      street_address: "",
-      street_address_2: "",
-      city: "",
-      state: "",
-      zip_code: "",
-      phone: ""
+  const continueWithoutSaving = async () => {
+    setShowSaveAddressPrompt(false);
+    setAddressLabelToSave("");
+
+    await executeGetRatesLogic();
+  };
+
+  const handlePurchase = async () => {
+    if (printLocation === 'store') {
+      try {
+        const totalWeight = calculateTotalWeight();
+        const parcelToSend = {
+          ...parcel,
+          weight: totalWeight.toString()
+        };
+        delete parcelToSend.weight_oz;
+
+        await base44.entities.PendingShipment.create({
+          from_address: fromAddress,
+          to_address: toAddress,
+          parcel: parcelToSend,
+          selected_rate: selectedRate,
+          print_location: printLocation,
+          status: 'pending'
+        });
+
+        setPurchaseSuccess({
+          type: 'pending',
+          message: 'Shipment saved! Visit store to complete.'
+        });
+      } catch (error) {
+        alert("Error saving shipment.");
+      }
+      return;
+    }
+
+    // For home printing - go to Stripe checkout
+    setPurchasing(true);
+    try {
+      const totalWeight = calculateTotalWeight();
+      const parcelToSend = {
+        ...parcel,
+        weight: totalWeight.toString()
+      };
+      delete parcelToSend.weight_oz;
+
+      const response = await base44.functions.invoke('createStripeCheckout', {
+        type: 'shipping_label',
+        data: {
+          rate: selectedRate,
+          rate_id: selectedRate.rate_id,
+          from_address: fromAddress,
+          to_address: toAddress,
+          parcel: parcelToSend
+        }
+      });
+
+      if (response.data.success) {
+        // Redirect to Stripe checkout
+        window.location.href = response.data.checkout_url;
+      } else {
+        alert(response.data.error || "Failed to create checkout session");
+      }
+    } catch (error) {
+      alert("Error creating checkout: " + error.message);
+    }
+    setPurchasing(false);
+  };
+
+  const applySavedAddress = (address, type) => {
+    const addressData = {
+      name: address.recipient_name,
+      street1: address.street_address,
+      street2: address.street_address_2 || "",
+      city: address.city,
+      state: address.state,
+      zip: address.zip_code,
+      country: address.country || "US", // Ensure country is set from saved address, default to US
+      phone: address.phone || "" // Ensure phone is set from saved address
+    };
+
+    if (type === 'from') {
+      setFromAddress(addressData);
+    } else {
+      setToAddress(addressData);
+      setToAddressSearch(address.label || address.recipient_name); // Set search field to the label or name of selected address
+      setShowToAddressResults(false);
+      setShowManualToAddress(false);
+      setIsToAddressFromSaved(true);
+      setSelectedSavedAddressId(address.id); // Store the ID
+    }
+
+    base44.entities.SavedAddress.update(address.id, {
+      times_used: (address.times_used || 0) + 1
     });
   };
 
-  const handleProfileSubmit = (e) => {
-    e.preventDefault();
-    const { email, ...dataToUpdate } = profileData;
-    updateProfileMutation.mutate(dataToUpdate);
+  const handleAddNewToAddress = () => {
+    setShowManualToAddress(true);
+    setShowToAddressResults(false);
+    setIsToAddressFromSaved(false);
+    setSelectedSavedAddressId(null); // Clear selected saved address ID
+    setToAddress({
+      name: toAddressSearch, // Pre-fill name with whatever was typed
+      street1: "",
+      street2: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "US", // Default country
+      phone: "" // Reset phone
+    });
   };
 
-  const handleAddressSubmit = (e) => {
-    e.preventDefault();
-    if (editingAddress) {
-      updateAddressMutation.mutate({ id: editingAddress.id, data: addressData });
-    } else {
-      createAddressMutation.mutate(addressData);
-    }
-  };
-
-  const startEditingAddress = (address) => {
-    setAddressData(address);
-    setEditingAddress(address);
-    setShowAddressForm(true);
-  };
-
-  const cancelAddressForm = () => {
-    setShowAddressForm(false);
-    setEditingAddress(null);
-    resetAddressForm();
-  };
-
-  const downloadUSPSForm = async (reservationId) => {
-    try {
-      // Assuming base44.functions.invoke correctly handles binary responses
-      const response = await base44.functions.invoke('generateUSPSForm1583', {
-        reservation_id: reservationId
+  const applyValidatedAddress = async (type) => {
+    if (type === 'from' && validationDialog?.from?.validated) {
+      setFromAddress({
+        ...fromAddress,
+        street1: validationDialog.from.validated.street1,
+        street2: validationDialog.from.validated.street2 || "",
+        city: validationDialog.from.validated.city,
+        state: validationDialog.from.validated.state,
+        zip: validationDialog.from.validated.zip
       });
-      
-      // Create blob and download
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `USPS_Form_1583_${reservationId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    } catch (error) {
-      console.error('Error downloading USPS form:', error);
-      alert('Error downloading form. Please try again.');
+
+      // Remove from address from validation dialog, keep to address if it exists
+      if (validationDialog.to) {
+        setValidationDialog({ from: null, to: validationDialog.to });
+      } else {
+        setValidationDialog(null);
+      }
+    } else if (type === 'to' && validationDialog?.to?.validated) {
+      const correctedAddress = {
+        ...toAddress,
+        street1: validationDialog.to.validated.street1,
+        street2: validationDialog.to.validated.street2 || "",
+        city: validationDialog.to.validated.city,
+        state: validationDialog.to.validated.state,
+        zip: validationDialog.to.validated.zip,
+        country: validationDialog.to.validated.country || toAddress.country, // Ensure country is updated if validated
+        phone: validationDialog.to.validated.phone || toAddress.phone // Ensure phone is updated if validated
+      };
+
+      setToAddress(correctedAddress);
+
+      // If this address came from saved addresses, update it in the database
+      if (isToAddressFromSaved && selectedSavedAddressId) {
+        try {
+          await base44.entities.SavedAddress.update(selectedSavedAddressId, {
+            recipient_name: correctedAddress.name,
+            street_address: correctedAddress.street1,
+            street_address_2: correctedAddress.street2,
+            city: correctedAddress.city,
+            state: correctedAddress.state,
+            zip_code: correctedAddress.zip,
+            country: correctedAddress.country,
+            phone: correctedAddress.phone,
+          });
+
+          // Refresh saved addresses
+          queryClient.invalidateQueries({ queryKey: ['savedAddresses'] });
+        } catch (error) {
+          console.error("Error updating saved address:", error);
+          // Optionally, show a toast or alert that saving failed
+        }
+      }
+
+      // Remove to address from validation dialog, keep from address if it exists
+      if (validationDialog.from) {
+        setValidationDialog({ from: validationDialog.from, to: null });
+      } else {
+        setValidationDialog(null);
+      }
     }
   };
 
-  // Show loading while fetching user data
-  if (userLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your account...</p>
-        </div>
-      </div>
-    );
-  }
+  // Group rates by carrier for display
+  const groupedRates = useMemo(() => {
+    const groups = {};
+    (rates || []).forEach(rate => {
+      if (!groups[rate.carrier]) {
+        groups[rate.carrier] = [];
+      }
+      groups[rate.carrier].push(rate);
+    });
+    return groups;
+  }, [rates]);
 
-  // Show error if user data failed to load
-  if (userError || !user) {
+  // Best Value - cheapest per carrier
+  const bestValueByCarrier = useMemo(() => {
+    if (!rates || rates.length === 0) return [];
+    const result = [];
+    Object.entries(groupedRates).forEach(([carrier, carrierRates]) => {
+      const cheapest = carrierRates.reduce((min, rate) => rate.amount < min.amount ? rate : min);
+      result.push(cheapest);
+    });
+    return result.sort((a, b) => a.amount - b.amount);
+  }, [rates, groupedRates]);
+
+  // Fastest - quickest delivery per carrier
+  const fastestByCarrier = useMemo(() => {
+    if (!rates || rates.length === 0) return [];
+    const result = [];
+    Object.entries(groupedRates).forEach(([carrier, carrierRates]) => {
+      // Filter to only rates with estimated_days
+      const withDays = carrierRates.filter(r => r.estimated_days != null);
+      if (withDays.length > 0) {
+        const fastest = withDays.reduce((min, rate) =>
+          rate.estimated_days < min.estimated_days ? rate : min
+        );
+        result.push(fastest);
+      }
+    });
+    return result.sort((a, b) => a.estimated_days - b.estimated_days);
+  }, [rates, groupedRates]);
+
+  // Best Value - Guaranteed Delivery (only truly guaranteed services)
+  const bestValueGuaranteed = useMemo(() => {
+    if (!rates || rates.length === 0) return [];
+
+    // Whitelist of guaranteed services by carrier
+    const GUARANTEED_SERVICES = {
+      'UPS': [
+        '2 day air a.m.',
+        'next day air',
+        'next day air saver',
+        'next day air early',
+        'worldwide express plus',
+        'worldwide express',
+        'worldwide express na1',
+        'worldwide saver',
+        'worldwide express freight midday',
+        'worldwide express freight'
+      ],
+      'USPS': [
+        'priority mail express'
+      ],
+      'FedEx': [
+        'first overnight',
+        'priority overnight',
+        'standard overnight',
+        '2day a.m.',
+        'first overnight extra hours',
+        'priority overnight extra hours',
+        'standard overnight extra hours',
+        'international first',
+        'international priority',
+        'international priority express',
+        'international priority freight',
+        'international priority directdistribution',
+        'international priority directdistribution freight'
+      ]
+    };
+
+    // Filter to only guaranteed services
+    const guaranteed = rates.filter(r => {
+      if (!r.estimated_days) return false;
+
+      const carrier = r.carrier;
+      const serviceLower = r.service_level.toLowerCase();
+
+      const carrierGuaranteed = GUARANTEED_SERVICES[carrier] || [];
+      return carrierGuaranteed.some(guaranteedService =>
+        serviceLower.includes(guaranteedService)
+      );
+    });
+
+    return guaranteed.sort((a, b) => a.amount - b.amount);
+  }, [rates]);
+
+  if (purchaseSuccess) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-0 shadow-xl">
-          <CardContent className="text-center py-12">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Account</h2>
-            <p className="text-gray-600 mb-6">Unable to load your account information. Please try logging in again.</p>
-            <Button
-              onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-              className="bg-blue-900 hover:bg-blue-800"
-            >
-              Login
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-2xl w-full"
+        >
+          <Card className="border-0 shadow-2xl">
+            <CardContent className="p-12 text-center">
+              <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-6" />
+
+              {purchaseSuccess.type === 'pending' ? (
+                <>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Shipment Saved!</h2>
+                  <p className="text-lg text-gray-600 mb-8">
+                    Visit our store to complete the purchase
+                  </p>
+                  <div className="bg-blue-50 rounded-lg p-6 mb-8">
+                    <p className="text-sm text-gray-700">
+                      📍 20711 Wilderness Oak Ste 107, San Antonio, TX 78258
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Label Purchased!</h2>
+                  <div className="bg-gray-50 rounded-lg p-6 mb-8">
+                    <p className="mb-2"><strong>Tracking:</strong> {purchaseSuccess.label.tracking_number}</p>
+                    <p className="mb-2"><strong>Carrier:</strong> {purchaseSuccess.label.carrier}</p>
+                    <p className="text-2xl font-bold text-green-700">${purchaseSuccess.label.rate.toFixed(2)}</p>
+                  </div>
+                  <a href={purchaseSuccess.label.label_url} target="_blank" rel="noopener noreferrer">
+                    <Button size="lg" className="bg-blue-900 hover:bg-blue-800 mb-4">
+                      <Download className="w-5 h-5 mr-2" />
+                      Download Label
+                    </Button>
+                  </a>
+                </>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/MyAccount'}
+                className="w-full"
+              >
+                View My Account
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">My Account</h1>
-            <p className="text-gray-600">Manage your profile and shipping information</p>
-          </div>
-          <Button variant="outline" onClick={() => base44.auth.logout()} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
-        </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">Create Shipment</h1>
 
-        {/* Payment Success Banner */}
-        {showPaymentSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mb-6 bg-green-50 border-2 border-green-200 rounded-lg p-6"
-          >
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <div>
-                <h3 className="text-lg font-bold text-green-900">Payment Successful!</h3>
-                <p className="text-green-700">Your label will appear below in 2-3 minutes. Check your email for confirmation.</p>
-              </div>
+        {/* Update Address Prompt Dialog */}
+        <Dialog open={showUpdateAddressPrompt} onOpenChange={setShowUpdateAddressPrompt}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Your Account Address?</DialogTitle>
+              <DialogDescription>
+                You've changed your "From" address. Would you like to update your account profile with this new address?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="bg-blue-50 rounded-lg p-4 my-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">New Address:</p>
+              <p className="text-sm text-gray-700">{fromAddress.name}</p>
+              <p className="text-sm text-gray-700">{fromAddress.street1}</p>
+              {fromAddress.street2 && <p className="text-sm text-gray-700">{fromAddress.street2}</p>}
+              <p className="text-sm text-gray-700">{fromAddress.city}, {fromAddress.state} {fromAddress.zip}</p>
             </div>
-          </motion.div>
-        )}
 
-        {/* Payment Cancelled Banner */}
-        {showPaymentCancelled && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mb-6 bg-orange-50 border-2 border-orange-200 rounded-lg p-6"
-          >
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-orange-600" />
-              <div>
-                <h3 className="text-lg font-bold text-orange-900">Payment Cancelled</h3>
-                <p className="text-orange-700">No charges were made. Create a new shipment when you're ready.</p>
-              </div>
+            <DialogFooter className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={continueWithoutUpdating}
+              >
+                No, Continue Without Updating
+              </Button>
+              <Button
+                onClick={async () => {
+                  await updateUserProfile();
+                  continueWithoutUpdating();
+                }}
+                className="bg-blue-900 hover:bg-blue-800"
+              >
+                Yes, Update My Profile
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Save Address Prompt Dialog */}
+        <Dialog open={showSaveAddressPrompt} onOpenChange={setShowSaveAddressPrompt}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Address to Address Book?</DialogTitle>
+              <DialogDescription>
+                Would you like to save this address for future shipments?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="bg-blue-50 rounded-lg p-4 my-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Address:</p>
+              <p className="text-sm text-gray-700">{toAddress.name}</p>
+              <p className="text-sm text-gray-700">{toAddress.street1}</p>
+              {toAddress.street2 && <p className="text-sm text-gray-700">{toAddress.street2}</p>}
+              <p className="text-sm text-gray-700">{toAddress.city}, {toAddress.state} {toAddress.zip}</p>
+              <p className="text-sm text-gray-700">{toAddress.country}</p>
+              {toAddress.phone && <p className="text-sm text-gray-700">Phone: {toAddress.phone}</p>}
             </div>
-          </motion.div>
-        )}
 
-        {saved && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3"
-          >
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-green-800 font-medium">Changes saved successfully!</span>
-          </motion.div>
-        )}
+            <div className="space-y-2">
+              <Label htmlFor="addressLabel">Address Label (Optional)</Label>
+              <Input
+                id="addressLabel"
+                value={addressLabelToSave}
+                onChange={(e) => setAddressLabelToSave(e.target.value)}
+                placeholder="e.g., Mom, Office, John's House"
+              />
+              <p className="text-xs text-gray-500">If not provided, we'll use the recipient's name</p>
+            </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="bg-white shadow-sm">
-            <TabsTrigger value="profile" className="gap-2">
-              <User className="w-4 h-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="addresses" className="gap-2">
-              <MapPin className="w-4 h-4" />
-              Addresses ({addresses.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-2">
-              <Clock className="w-4 h-4" />
-              Pending ({pendingShipments.length})
-            </TabsTrigger>
-            <TabsTrigger value="labels" className="gap-2">
-              <Package className="w-4 h-4" />
-              Labels ({shippingLabels.length})
-            </TabsTrigger>
-            <TabsTrigger value="mailbox" className="gap-2">
-              <Store className="w-4 h-4" />
-              Mailbox {mailboxReservation ? "(1)" : ""}
-            </TabsTrigger>
-          </TabsList>
+            <DialogFooter className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={continueWithoutSaving}
+              >
+                Continue Without Saving
+              </Button>
+              <Button
+                onClick={saveToAddressAndContinue}
+                className="bg-blue-900 hover:bg-blue-800"
+              >
+                Save & Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <TabsContent value="profile">
-            <Card className="border-0 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Profile Information</CardTitle>
-                    <CardDescription>Your personal details</CardDescription>
+        {/* Address Validation Dialog */}
+        <Dialog open={!!validationDialog} onOpenChange={() => setValidationDialog(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Address Validation</DialogTitle>
+              <DialogDescription>Review address corrections</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 mt-4">
+              {validationDialog?.from && validationDialog.from.validated && (
+                <div className="border-2 border-orange-200 rounded-lg p-4 bg-orange-50">
+                  <h3 className="font-semibold mb-3">From Address</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-semibold mb-2">You Entered:</p>
+                      <div className="text-sm bg-white p-3 rounded">
+                        <p>{validationDialog.from.original.street1}</p>
+                        <p>{validationDialog.from.original.city}, {validationDialog.from.original.state} {validationDialog.from.original.zip}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold mb-2">Suggested:</p>
+                      <div className="text-sm bg-green-100 p-3 rounded">
+                        <p>{validationDialog.from.validated.street1}</p>
+                        <p>{validationDialog.from.validated.street2 && validationDialog.from.validated.street2 + ', '}{validationDialog.from.validated.city}, {validationDialog.from.validated.state} {validationDialog.from.validated.zip}</p>
+                      </div>
+                    </div>
                   </div>
-                  {!editingProfile && (
-                    <Button onClick={() => setEditingProfile(true)} variant="outline" className="gap-2">
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => applyValidatedAddress('from')}
+                    className="mt-3 w-full bg-green-600 hover:bg-green-700"
+                  >
+                    Use Corrected Address
+                  </Button>
                 </div>
+              )}
+
+              {validationDialog?.to && validationDialog.to.validated && (
+                <div className="border-2 border-orange-200 rounded-lg p-4 bg-orange-50">
+                  <h3 className="font-semibold mb-3">To Address</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-semibold mb-2">You Entered:</p>
+                      <div className="text-sm bg-white p-3 rounded">
+                        <p>{validationDialog.to.original.street1}</p>
+                        <p>{validationDialog.to.original.city}, {validationDialog.to.original.state} {validationDialog.to.original.zip}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold mb-2">Suggested:</p>
+                      <div className="text-sm bg-green-100 p-3 rounded">
+                        <p>{validationDialog.to.validated.street1}</p>
+                        <p>{validationDialog.to.validated.street2 && validationDialog.to.validated.street2 + ', '}{validationDialog.to.validated.city}, {validationDialog.to.validated.state} {validationDialog.to.validated.zip}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => applyValidatedAddress('to')}
+                    className="mt-3 w-full bg-green-600 hover:bg-green-700"
+                  >
+                    {isToAddressFromSaved
+                      ? "Use Corrected & Update Address Book"
+                      : "Use Corrected Address"}
+                  </Button>
+                </div>
+              )}
+
+              {(validationDialog?.from?.messages?.length > 0 && !validationDialog.from.validated) && (
+                <div className="border-2 border-red-200 rounded-lg p-4 bg-red-50">
+                  <h3 className="font-semibold mb-3 text-red-700">From Address Issues</h3>
+                  {validationDialog.from.messages.map((msg, index) => (
+                    <p key={index} className="text-sm text-red-600">{msg}</p>
+                  ))}
+                </div>
+              )}
+
+              {(validationDialog?.to?.messages?.length > 0 && !validationDialog.to.validated) && (
+                <div className="border-2 border-red-200 rounded-lg p-4 bg-red-50">
+                  <h3 className="font-semibold mb-3 text-red-700">To Address Issues</h3>
+                  {validationDialog.to.messages.map((msg, index) => (
+                    <p key={index} className="text-sm text-red-600">{msg}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setValidationDialog(null)}>
+                Edit Manually
+              </Button>
+              <Button onClick={handleGetRates}>
+                Continue Anyway
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {step === 1 && (
+          <div className="space-y-6">
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle>From Address</CardTitle>
               </CardHeader>
-              <CardContent className="p-8">
-                <form onSubmit={handleProfileSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="full_name">Full Name</Label>
-                      <Input
-                        id="full_name"
-                        value={profileData.full_name}
-                        onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
-                        disabled={!editingProfile}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profileData.email}
-                        disabled
-                        className="bg-gray-50"
-                      />
-                      <p className="text-xs text-gray-500">Email cannot be changed (login credential)</p>
-                    </div>
+              <CardContent className="space-y-4">
+                {savedAddresses.length > 0 && (
+                  <div>
+                    <Label>Quick Select</Label>
+                    <Select onValueChange={(value) => {
+                      const address = savedAddresses.find(a => a.id === value);
+                      if (address) applySavedAddress(address, 'from');
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose saved address" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        {savedAddresses.map((addr) => (
+                          <SelectItem key={addr.id} value={addr.id}>
+                            {addr.label} - {addr.city}, {addr.state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                )}
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={profileData.phone}
-                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                        disabled={!editingProfile}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="business_name">Business Name</Label>
-                      <Input
-                        id="business_name"
-                        value={profileData.business_name}
-                        onChange={(e) => setProfileData({ ...profileData, business_name: e.target.value })}
-                        disabled={!editingProfile}
-                      />
-                    </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Name *</Label>
+                    <Input
+                      value={fromAddress.name}
+                      onChange={(e) => setFromAddress({ ...fromAddress, name: e.target.value })}
+                    />
                   </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Mailing Address</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="street_address">Street Address</Label>
-                      <Input
-                        id="street_address"
-                        value={profileData.street_address}
-                        onChange={(e) => setProfileData({ ...profileData, street_address: e.target.value })}
-                        disabled={!editingProfile}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="street_address_2">Apt, Suite, etc.</Label>
-                      <Input
-                        id="street_address_2"
-                        value={profileData.street_address_2}
-                        onChange={(e) => setProfileData({ ...profileData, street_address_2: e.target.value })}
-                        disabled={!editingProfile}
-                      />
-                    </div>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          value={profileData.city}
-                          onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
-                          disabled={!editingProfile}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="state">State</Label>
-                        <Input
-                          id="state"
-                          value={profileData.state}
-                          onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
-                          disabled={!editingProfile}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="zip_code">ZIP Code</Label>
-                        <Input
-                          id="zip_code"
-                          value={profileData.zip_code}
-                          onChange={(e) => setProfileData({ ...profileData, zip_code: e.target.value })}
-                          disabled={!editingProfile}
-                        />
-                      </div>
-                    </div>
+                  <div>
+                    <Label>Street *</Label>
+                    <Input
+                      value={fromAddress.street1}
+                      onChange={(e) => setFromAddress({ ...fromAddress, street1: e.target.value })}
+                    />
                   </div>
+                </div>
 
-                  {editingProfile && (
-                    <div className="flex gap-3">
-                      <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
-                        Save Changes
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => setEditingProfile(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-                </form>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>City *</Label>
+                    <Input
+                      value={fromAddress.city}
+                      onChange={(e) => setFromAddress({ ...fromAddress, city: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>State *</Label>
+                    <Input
+                      value={fromAddress.state}
+                      onChange={(e) => setFromAddress({ ...fromAddress, state: e.target.value })}
+                      maxLength={2}
+                    />
+                  </div>
+                  <div>
+                    <Label>ZIP *</Label>
+                    <Input
+                      value={fromAddress.zip}
+                      onChange={(e) => setFromAddress({ ...fromAddress, zip: e.target.value })}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="addresses" className="space-y-6">
-            {!showAddressForm && (
-              <Button onClick={() => setShowAddressForm(true)} className="bg-blue-900 hover:bg-blue-800 gap-2">
-                <Plus className="w-4 h-4" />
-                Add New Address
-              </Button>
-            )}
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle>To Address</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {savedAddresses.length > 0 && !showManualToAddress ? (
+                  <div className="relative" ref={searchRef}>
+                    <Label htmlFor="toAddressSearchInput">Search Saved Addresses</Label>
+                    <Input
+                      id="toAddressSearchInput"
+                      placeholder="Start typing a name or label..."
+                      value={toAddressSearch}
+                      onChange={(e) => {
+                        setToAddressSearch(e.target.value);
+                        setShowToAddressResults(true);
+                      }}
+                      onFocus={() => setShowToAddressResults(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setShowToAddressResults(false);
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      autoComplete="off"
+                    />
 
-            <AnimatePresence>
-              {showAddressForm && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <Card className="border-0 shadow-xl">
-                    <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-                      <CardTitle>{editingAddress ? "Edit Address" : "Add New Address"}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <form onSubmit={handleAddressSubmit} className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="label">Label *</Label>
-                            <Input
-                              id="label"
-                              value={addressData.label}
-                              onChange={(e) => setAddressData({ ...addressData, label: e.target.value })}
-                              placeholder="e.g., Mom, Office"
-                              required
-                            />
+                    {showToAddressResults && toAddressSearch.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                        {filteredToAddresses.length > 0 ? (
+                          filteredToAddresses.map((addr) => (
+                            <button
+                              key={addr.id}
+                              onClick={() => applySavedAddress(addr, 'to')}
+                              className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                            >
+                              <div className="font-semibold text-gray-900">{addr.label || addr.recipient_name}</div>
+                              <div className="text-sm text-gray-600">{addr.recipient_name}</div>
+                              <div className="text-xs text-gray-500">{addr.city}, {addr.state} {addr.zip_code}</div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center">
+                            <p className="text-gray-600 mb-3">No saved address found for "{toAddressSearch}"</p>
+                            <Button
+                              onClick={handleAddNewToAddress}
+                              size="sm"
+                              className="bg-blue-900 hover:bg-blue-800"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add New Address Manually
+                            </Button>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="recipient_name">Recipient Name *</Label>
-                            <Input
-                              id="recipient_name"
-                              value={addressData.recipient_name}
-                              onChange={(e) => setAddressData({ ...addressData, recipient_name: e.target.value })}
-                              required
-                            />
-                          </div>
-                        </div>
+                        )}
+                      </div>
+                    )}
+                    {filteredToAddresses.length > 0 && showToAddressResults && toAddressSearch.length > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={handleAddNewToAddress}
+                        className="mt-2 w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Enter a new address manually
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Country *</Label>
+                      <Select
+                        value={toAddress.country}
+                        onValueChange={(value) => setToAddress({ ...toAddress, country: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          <SelectItem value="US">United States</SelectItem>
+                          <SelectItem value="CA">Canada</SelectItem>
+                          <SelectItem value="MX">Mexico</SelectItem>
+                          <SelectItem value="GB">United Kingdom</SelectItem>
+                          <SelectItem value="AU">Australia</SelectItem>
+                          <SelectItem value="DE">Germany</SelectItem>
+                          <SelectItem value="FR">France</SelectItem>
+                          <SelectItem value="IT">Italy</SelectItem>
+                          <SelectItem value="ES">Spain</SelectItem>
+                          <SelectItem value="NL">Netherlands</SelectItem>
+                          <SelectItem value="BE">Belgium</SelectItem>
+                          <SelectItem value="CH">Switzerland</SelectItem>
+                          <SelectItem value="AT">Austria</SelectItem>
+                          <SelectItem value="SE">Sweden</SelectItem>
+                          <SelectItem value="NO">Norway</SelectItem>
+                          <SelectItem value="DK">Denmark</SelectItem>
+                          <SelectItem value="FI">Finland</SelectItem>
+                          <SelectItem value="PL">Poland</SelectItem>
+                          <SelectItem value="IE">Ireland</SelectItem>
+                          <SelectItem value="PT">Portugal</SelectItem>
+                          <SelectItem value="GR">Greece</SelectItem>
+                          <SelectItem value="CZ">Czech Republic</SelectItem>
+                          <SelectItem value="HU">Hungary</SelectItem>
+                          <SelectItem value="RO">Romania</SelectItem>
+                          <SelectItem value="JP">Japan</SelectItem>
+                          <SelectItem value="KR">South Korea</SelectItem>
+                          <SelectItem value="CN">China</SelectItem>
+                          <SelectItem value="IN">India</SelectItem>
+                          <SelectItem value="SG">Singapore</SelectItem>
+                          <SelectItem value="HK">Hong Kong</SelectItem>
+                          <SelectItem value="TW">Taiwan</SelectItem>
+                          <SelectItem value="MY">Malaysia</SelectItem>
+                          <SelectItem value="TH">Thailand</SelectItem>
+                          <SelectItem value="PH">Philippines</SelectItem>
+                          <SelectItem value="ID">Indonesia</SelectItem>
+                          <SelectItem value="VN">Vietnam</SelectItem>
+                          <SelectItem value="NZ">New Zealand</SelectItem>
+                          <SelectItem value="BR">Brazil</SelectItem>
+                          <SelectItem value="AR">Argentina</SelectItem>
+                          <SelectItem value="CL">Chile</SelectItem>
+                          <SelectItem value="CO">Colombia</SelectItem>
+                          <SelectItem value="PE">Peru</SelectItem>
+                          <SelectItem value="ZA">South Africa</SelectItem>
+                          <SelectItem value="IL">Israel</SelectItem>
+                          <SelectItem value="AE">United Arab Emirates</SelectItem>
+                          <SelectItem value="SA">Saudi Arabia</SelectItem>
+                          <SelectItem value="TR">Turkey</SelectItem>
+                          <SelectItem value="RU">Russia</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Recipient Name *</Label>
+                        <Input
+                          value={toAddress.name}
+                          onChange={(e) => setToAddress({ ...toAddress, name: e.target.value })}
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Phone</Label>
+                        <Input
+                          type="tel"
+                          value={toAddress.phone}
+                          onChange={(e) => setToAddress({ ...toAddress, phone: e.target.value })}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Street Address *</Label>
+                        <Input
+                          value={toAddress.street1}
+                          onChange={(e) => setToAddress({ ...toAddress, street1: e.target.value })}
+                          placeholder="Street address"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Apartment, Suite, Unit, etc.</Label>
+                        <Input
+                          value={toAddress.street2}
+                          onChange={(e) => setToAddress({ ...toAddress, street2: e.target.value })}
+                          placeholder="Apt 123, Suite 456, etc."
+                        />
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="company">Company</Label>
+                          <Label>City *</Label>
                           <Input
-                            id="company"
-                            value={addressData.company}
-                            onChange={(e) => setAddressData({ ...addressData, company: e.target.value })}
+                            value={toAddress.city}
+                            onChange={(e) => setToAddress({ ...toAddress, city: e.target.value })}
+                            placeholder="City"
                           />
                         </div>
-
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="address_street">Street Address *</Label>
-                            <Input
-                              id="address_street"
-                              value={addressData.street_address}
-                              onChange={(e) => setAddressData({ ...addressData, street_address: e.target.value })}
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="address_street_2">Apt, Suite, etc.</Label>
-                            <Input
-                              id="address_street_2"
-                              value={addressData.street_address_2}
-                              onChange={(e) => setAddressData({ ...addressData, street_address_2: e.target.value })}
-                            />
-                          </div>
-                          <div className="grid md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="address_city">City *</Label>
-                              <Input
-                                id="address_city"
-                                value={addressData.city}
-                                onChange={(e) => setAddressData({ ...addressData, city: e.target.value })}
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="address_state">State *</Label>
-                              <Input
-                                id="address_state"
-                                value={addressData.state}
-                                onChange={(e) => setAddressData({ ...addressData, state: e.target.value })}
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="address_zip">ZIP *</Label>
-                              <Input
-                                id="address_zip"
-                                value={addressData.zip_code}
-                                onChange={(e) => setAddressData({ ...addressData, zip_code: e.target.value })}
-                                required
-                              />
-                            </div>
-                          </div>
-                        </div>
-
                         <div className="space-y-2">
-                          <Label htmlFor="address_phone">Phone</Label>
+                          <Label>{toAddress.country === 'US' ? 'State *' : 'State/Province'}</Label>
                           <Input
-                            id="address_phone"
-                            type="tel"
-                            value={addressData.phone}
-                            onChange={(e) => setAddressData({ ...addressData, phone: e.target.value })}
+                            value={toAddress.state}
+                            onChange={(e) => setToAddress({ ...toAddress, state: e.target.value })}
+                            placeholder={toAddress.country === 'US' ? 'TX' : 'State/Province'}
+                            maxLength={toAddress.country === 'US' ? 2 : 50}
                           />
                         </div>
-
-                        <div className="flex gap-3">
-                          <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
-                            {editingAddress ? "Update" : "Save"} Address
-                          </Button>
-                          <Button type="button" variant="outline" onClick={cancelAddressForm}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </form>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {addresses.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-6">
-                {addresses.map((address) => (
-                  <Card key={address.id} className="border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">{address.label}</h3>
-                          {address.times_used > 0 && (
-                            <p className="text-sm text-gray-500">Used {address.times_used} times</p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditingAddress(address)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteAddressMutation.mutate(address.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                        <div className="space-y-2">
+                          <Label>{toAddress.country === 'US' ? 'ZIP Code *' : 'Postal Code *'}</Label>
+                          <Input
+                            value={toAddress.zip}
+                            onChange={(e) => setToAddress({ ...toAddress, zip: e.target.value })}
+                            placeholder={toAddress.country === 'US' ? '78258' : 'Postal code'}
+                          />
                         </div>
                       </div>
-                      <div className="text-gray-700 space-y-1">
-                        <p className="font-medium">{address.recipient_name}</p>
-                        {address.company && <p>{address.company}</p>}
-                        <p>{address.street_address}</p>
-                        {address.street_address_2 && <p>{address.street_address_2}</p>}
-                        <p>{address.city}, {address.state} {address.zip_code}</p>
-                        {address.phone && <p>{address.phone}</p>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-0 shadow-lg">
-                <CardContent className="text-center py-12">
-                  <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Saved Addresses</h3>
-                  <p className="text-gray-600 mb-6">Save addresses for quick shipping</p>
-                  <Button onClick={() => setShowAddressForm(true)} className="bg-blue-900 hover:bg-blue-800">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Address
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pending">
-            {pendingShipments.length > 0 ? (
-              <div className="space-y-4">
-                {pendingShipments.map((shipment) => (
-                  <Card key={shipment.id} className="border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <Badge className="bg-orange-100 text-orange-800 mb-3">Pending Validation</Badge>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p><strong>To:</strong> {shipment.to_address?.name}, {shipment.to_address?.city}, {shipment.to_address?.state}</p>
-                            <p><strong>Service:</strong> {shipment.selected_rate?.service_level}</p>
-                            <p><strong>Package:</strong> {shipment.parcel?.length}" × {shipment.parcel?.width}" × {shipment.parcel?.height}", {shipment.parcel?.weight} lbs</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900 mb-2">
-                            ${shipment.selected_rate?.amount?.toFixed(2)}
-                          </div>
-                          <Badge className="bg-blue-100 text-blue-800">
-                            <Store className="w-3 h-3 mr-1" />
-                            Visit Store
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-0 shadow-lg">
-                <CardContent className="text-center py-12">
-                  <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Pending Shipments</h3>
-                  <p className="text-gray-600">Create a shipment to get started</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="labels">
-            {shippingLabels.length > 0 ? (
-              <div className="space-y-4">
-                {shippingLabels.map((label) => (
-                  <Card key={label.id} className="border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex gap-2 mb-3">
-                            <Badge className="bg-blue-100 text-blue-800">{label.carrier}</Badge>
-                            <Badge variant="outline">{label.service_level}</Badge>
-                          </div>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <p><strong>Tracking:</strong> {label.tracking_number}</p>
-                            <p><strong>To:</strong> {label.to_address?.name}</p>
-                            <p><strong>Date:</strong> {new Date(label.created_date).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900 mb-3">
-                            ${label.rate?.toFixed(2)}
-                          </div>
-                          {label.label_url && (
-                            <a href={label.label_url} target="_blank" rel="noopener noreferrer">
-                              <Button size="sm">
-                                <Download className="w-4 h-4 mr-2" />
-                                Download
-                              </Button>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-0 shadow-lg">
-                <CardContent className="text-center py-12">
-                  <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Labels Yet</h3>
-                  <p className="text-gray-600">Purchase your first shipping label</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="mailbox">
-            {mailboxReservation ? (
-              <Card className="border-0 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Mailbox Reservation</span>
-                    {mailboxReservation.status === 'approved' && (
-                      <Badge className="bg-green-100 text-green-800">
-                        Active
-                      </Badge>
-                    )}
-                    {mailboxReservation.status === 'pending' && (
-                      <Badge className="bg-yellow-100 text-yellow-800">
-                        Pending Approval
-                      </Badge>
-                    )}
-                    {mailboxReservation.status === 'denied' && (
-                      <Badge className="bg-red-100 text-red-800">
-                        Denied
-                      </Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Type:</span>
-                      <span className="font-semibold capitalize">{mailboxReservation.mailbox_type}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Size:</span>
-                      <span className="font-semibold capitalize">{mailboxReservation.preferred_size}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Payment Status:</span>
-                      <span className="font-semibold capitalize">{mailboxReservation.payment_status}</span>
-                    </div>
-                    {mailboxReservation.start_date && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Start Date:</span>
-                        <span className="font-semibold">{new Date(mailboxReservation.start_date).toLocaleDateString()}</span>
-                      </div>
+
+                    {savedAddresses.length > 0 && showManualToAddress && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowManualToAddress(false);
+                          setToAddressSearch("");
+                          setToAddress({
+                            name: "",
+                            street1: "",
+                            street2: "",
+                            city: "",
+                            state: "",
+                            zip: "",
+                            country: "US",
+                            phone: ""
+                          });
+                        }}
+                      >
+                        ← Back to Search
+                      </Button>
                     )}
-                    
-                    {/* Download USPS Form Button */}
-                    <div className="pt-4 border-t mt-4">
-                      {mailboxReservation.status === 'approved' && (
-                        <Button 
-                          onClick={() => downloadUSPSForm(mailboxReservation.id)}
-                          variant="outline" 
-                          className="w-full"
-                        >
-                          <FileCheck className="w-4 h-4 mr-2" />
-                          Download USPS Form 1583
-                        </Button>
-                      )}
-                      {mailboxReservation.status === 'pending' && (
-                        <p className="text-sm text-gray-500 text-center">
-                          USPS Form 1583 will be available for download once your reservation is approved.
-                        </p>
-                      )}
-                      {mailboxReservation.status === 'denied' && (
-                        <p className="text-sm text-red-600 text-center">
-                          Your mailbox reservation was denied. Please contact support for more information.
-                        </p>
-                      )}
+                    {savedAddresses.length === 0 && (
+                      <p className="text-sm text-gray-500 mt-2">You have no saved addresses. Please enter recipient details manually.</p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle>Package Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <Label>Length (in) *</Label>
+                    <Input
+                      type="number"
+                      value={parcel.length}
+                      onChange={(e) => setParcel({ ...parcel, length: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Width (in) *</Label>
+                    <Input
+                      type="number"
+                      value={parcel.width}
+                      onChange={(e) => setParcel({ ...parcel, width: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Height (in) *</Label>
+                    <Input
+                      type="number"
+                      value={parcel.height}
+                      onChange={(e) => setParcel({ ...parcel, height: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Weight (lbs) *</Label>
+                    <Input
+                      type="number"
+                      value={parcel.weight}
+                      onChange={(e) => setParcel({ ...parcel, weight: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label>Ounces (oz)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="15"
+                      value={parcel.weight_oz}
+                      onChange={(e) => setParcel({ ...parcel, weight_oz: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <div className="bg-blue-50 p-3 rounded-lg w-full">
+                      <p className="text-xs text-gray-600 mb-1">Total Weight</p>
+                      <p className="text-lg font-bold text-blue-900">{calculateTotalWeight().toFixed(2)} lbs</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-0 shadow-lg">
-                <CardContent className="text-center py-12">
-                  <Store className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Mailbox Reservation</h3>
-                  <p className="text-gray-600">You don't have an active mailbox reservation. Contact us to set one up!</p>
+                </div>
+
+                {/* Removed NEW: Media Mail Checkbox */}
+              </CardContent>
+            </Card>
+
+            {/* Removed NEW: Media Mail Warning Dialog */}
+
+            <Button
+              onClick={handleGetRates}
+              disabled={loading || validating}
+              className="w-full bg-blue-900 hover:bg-blue-800 py-6 text-lg"
+            >
+              {loading || validating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  {validating ? 'Validating...' : 'Getting Rates...'}
+                </>
+              ) : (
+                <>
+                  Get Shipping Rates
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle>Select Shipping Service</CardTitle>
+                <CardDescription>
+                  {rates?.length || 0} service options available
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <RadioGroup value={selectedRate?.rate_id} onValueChange={(value) => {
+                  const rate = rates.find(r => r.rate_id === value);
+                  setSelectedRate(rate);
+                }}>
+                  {/* Best Value by Carrier */}
+                  {bestValueByCarrier.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        💰 Best Value by Carrier
+                      </h3>
+                      <div className="space-y-3">
+                        {bestValueByCarrier.map((rate) => (
+                          <label
+                            key={rate.rate_id}
+                            className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                              selectedRate?.rate_id === rate.rate_id
+                                ? 'border-blue-600 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <RadioGroupItem value={rate.rate_id} />
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {rate.carrier === 'USPS' && '📮 '}
+                                  {rate.carrier === 'UPS' && '📦 '}
+                                  {rate.carrier === 'FedEx' && '🚚 '}
+                                  {rate.carrier} - {rate.service_level}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {rate.estimated_days ? `${rate.estimated_days} business days` : rate.duration_terms || 'See carrier for details'}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">${rate.amount.toFixed(2)}</div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fastest by Carrier */}
+                  {fastestByCarrier.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        ⚡ Fastest by Carrier
+                      </h3>
+                      <div className="space-y-3">
+                        {fastestByCarrier.map((rate) => (
+                          <label
+                            key={rate.rate_id}
+                            className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                              selectedRate?.rate_id === rate.rate_id
+                                ? 'border-blue-600 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <RadioGroupItem value={rate.rate_id} />
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {rate.carrier === 'USPS' && '📮 '}
+                                  {rate.carrier === 'UPS' && '📦 '}
+                                  {rate.carrier === 'FedEx' && '🚚 '}
+                                  {rate.carrier} - {rate.service_level}
+                                </div>
+                                <div className="text-sm text-green-600 font-semibold">
+                                  {rate.estimated_days} business day{rate.estimated_days !== 1 ? 's' : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">${rate.amount.toFixed(2)}</div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Best Value - Guaranteed Delivery */}
+                  {bestValueGuaranteed.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-blue-600" />
+                        Best Value - Guaranteed Delivery
+                      </h3>
+                      <div className="space-y-3">
+                        {bestValueGuaranteed.slice(0, 5).map((rate) => (
+                          <label
+                            key={rate.rate_id}
+                            className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                              selectedRate?.rate_id === rate.rate_id
+                                ? 'border-blue-600 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <RadioGroupItem value={rate.rate_id} />
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {rate.carrier === 'USPS' && '📮 '}
+                                  {rate.carrier === 'UPS' && '📦 '}
+                                  {rate.carrier === 'FedEx' && '🚚 '}
+                                  {rate.carrier} - {rate.service_level} - Guaranteed
+                                </div>
+                                <div className="text-sm text-blue-600 font-semibold">
+                                  Guaranteed {rate.estimated_days} business day{rate.estimated_days !== 1 ? 's' : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-gray-900">${rate.amount.toFixed(2)}</div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All Options by Carrier */}
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">All Options by Carrier</h3>
+                    <div className="space-y-6">
+                      {Object.entries(groupedRates).map(([carrier, carrierRates]) => (
+                        <div key={carrier}>
+                          <h4 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
+                            {carrier === 'USPS' && '📮'}
+                            {carrier === 'UPS' && '📦'}
+                            {carrier === 'FedEx' && '🚚'}
+                            {carrier}
+                          </h4>
+                          <div className="space-y-3">
+                            {carrierRates.map((rate) => (
+                              <label
+                                key={rate.rate_id}
+                                className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                                  selectedRate?.rate_id === rate.rate_id
+                                    ? 'border-blue-600 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 flex-1">
+                                  <RadioGroupItem value={rate.rate_id} />
+                                  <div>
+                                    <div className="font-semibold text-gray-900">{rate.service_level}</div>
+                                    <div className="text-sm text-gray-600">
+                                      {rate.estimated_days ? `${rate.estimated_days} business days` : rate.duration_terms || 'See carrier for details'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900">${rate.amount.toFixed(2)}</div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            {selectedRate && (
+              <Card className="border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle>Print Location</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup value={printLocation} onValueChange={setPrintLocation}>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <label htmlFor="home" className={`p-4 border-2 rounded-lg cursor-pointer flex items-center ${
+                        printLocation === 'home' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
+                      }`}>
+                        <RadioGroupItem value="home" id="home" className="mr-2"/>
+                        <Label htmlFor="home" className="cursor-pointer">Print at Home</Label>
+                      </label>
+                      <label htmlFor="store" className={`p-4 border-2 rounded-lg cursor-pointer flex items-center ${
+                        printLocation === 'store' ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
+                      }`}>
+                        <RadioGroupItem value="store" id="store" className="mr-2"/>
+                        <Label htmlFor="store" className="cursor-pointer">Print at Store</Label>
+                      </label>
+                    </div>
+                  </RadioGroup>
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-        </Tabs>
+
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                Back
+              </Button>
+              <Button
+                onClick={handlePurchase}
+                disabled={!selectedRate || purchasing}
+                className="flex-1 bg-blue-900 hover:bg-blue-800 py-6 text-lg"
+              >
+                {purchasing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : printLocation === 'store' ? (
+                  <>
+                    <Store className="w-5 h-5 mr-2" />
+                    Save for In-Store
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-5 h-5 mr-2" />
+                    Pay ${selectedRate?.amount.toFixed(2)}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

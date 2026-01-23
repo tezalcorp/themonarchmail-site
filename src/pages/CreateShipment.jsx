@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,48 +13,6 @@ import { Package, CheckCircle, Download, Store, ArrowRight, AlertCircle, CheckCi
 import { motion } from "framer-motion";
 
 export default function CreateShipment() {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const authenticated = await base44.auth.isAuthenticated();
-        setIsAuthenticated(authenticated);
-      } catch (error) {
-        setIsAuthenticated(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
-      </div>
-    );
-  }
-
-  if (isAuthenticated === false) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-0 shadow-xl">
-          <CardContent className="text-center py-12">
-            <Package className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
-            <p className="text-gray-600 mb-6">Please login to create a shipment</p>
-            <Button
-              onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
-              className="bg-blue-900 hover:bg-blue-800"
-            >
-              Login / Create Account
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return <AuthenticatedCreateShipment />;
 }
 
@@ -203,12 +160,12 @@ function AuthenticatedCreateShipment() {
     const lbs = parseFloat(parcel.weight) || 0;
     const oz = parseFloat(parcel.weight_oz) || 0;
     let totalWeight = lbs + (oz / 16);
-    
+
     // Round up to 1 oz minimum (same as Shippo)
     if (totalWeight > 0 && totalWeight < 0.0625) { // 0.0625 lbs = 1 oz
       totalWeight = 0.0625;
     }
-    
+
     return totalWeight;
   };
 
@@ -267,7 +224,7 @@ function AuthenticatedCreateShipment() {
 
   const executeGetRatesLogic = async () => {
     const totalWeight = calculateTotalWeight();
-    
+
     const isValid = await validateAddresses();
     if (!isValid) return;
 
@@ -399,8 +356,8 @@ function AuthenticatedCreateShipment() {
     try {
       const totalWeight = calculateTotalWeight();
       const parcelToSend = {
-          ...parcel,
-          weight: totalWeight.toString()
+        ...parcel,
+        weight: totalWeight.toString()
       };
       delete parcelToSend.weight_oz;
 
@@ -500,7 +457,7 @@ function AuthenticatedCreateShipment() {
         country: validationDialog.to.validated.country || toAddress.country, // Ensure country is updated if validated
         phone: validationDialog.to.validated.phone || toAddress.phone // Ensure phone is updated if validated
       };
-      
+
       setToAddress(correctedAddress);
 
       // If this address came from saved addresses, update it in the database
@@ -516,7 +473,7 @@ function AuthenticatedCreateShipment() {
             country: correctedAddress.country,
             phone: correctedAddress.phone,
           });
-          
+
           // Refresh saved addresses
           queryClient.invalidateQueries({ queryKey: ['savedAddresses'] });
         } catch (error) {
@@ -565,7 +522,7 @@ function AuthenticatedCreateShipment() {
       // Filter to only rates with estimated_days
       const withDays = carrierRates.filter(r => r.estimated_days != null);
       if (withDays.length > 0) {
-        const fastest = withDays.reduce((min, rate) => 
+        const fastest = withDays.reduce((min, rate) =>
           rate.estimated_days < min.estimated_days ? rate : min
         );
         result.push(fastest);
@@ -577,7 +534,7 @@ function AuthenticatedCreateShipment() {
   // Best Value - Guaranteed Delivery (only truly guaranteed services)
   const bestValueGuaranteed = useMemo(() => {
     if (!rates || rates.length === 0) return [];
-    
+
     // Whitelist of guaranteed services by carrier
     const GUARANTEED_SERVICES = {
       'UPS': [
@@ -611,20 +568,20 @@ function AuthenticatedCreateShipment() {
         'international priority directdistribution freight'
       ]
     };
-    
+
     // Filter to only guaranteed services
     const guaranteed = rates.filter(r => {
       if (!r.estimated_days) return false;
-      
+
       const carrier = r.carrier;
       const serviceLower = r.service_level.toLowerCase();
-      
+
       const carrierGuaranteed = GUARANTEED_SERVICES[carrier] || [];
-      return carrierGuaranteed.some(guaranteedService => 
+      return carrierGuaranteed.some(guaranteedService =>
         serviceLower.includes(guaranteedService)
       );
     });
-    
+
     return guaranteed.sort((a, b) => a.amount - b.amount);
   }, [rates]);
 
@@ -726,7 +683,6 @@ function AuthenticatedCreateShipment() {
           </DialogContent>
         </Dialog>
 
-
         {/* Save Address Prompt Dialog */}
         <Dialog open={showSaveAddressPrompt} onOpenChange={setShowSaveAddressPrompt}>
           <DialogContent>
@@ -775,7 +731,7 @@ function AuthenticatedCreateShipment() {
           </DialogContent>
         </Dialog>
 
-
+        {/* Address Validation Dialog */}
         <Dialog open={!!validationDialog} onOpenChange={() => setValidationDialog(null)}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
@@ -835,8 +791,8 @@ function AuthenticatedCreateShipment() {
                     onClick={() => applyValidatedAddress('to')}
                     className="mt-3 w-full bg-green-600 hover:bg-green-700"
                   >
-                    {isToAddressFromSaved 
-                      ? "Use Corrected & Update Address Book" 
+                    {isToAddressFromSaved
+                      ? "Use Corrected & Update Address Book"
                       : "Use Corrected Address"}
                   </Button>
                 </div>
@@ -1000,13 +956,13 @@ function AuthenticatedCreateShipment() {
                       </div>
                     )}
                     {filteredToAddresses.length > 0 && showToAddressResults && toAddressSearch.length > 0 && (
-                        <Button
-                            variant="outline"
-                            onClick={handleAddNewToAddress}
-                            className="mt-2 w-full"
-                        >
-                            <Plus className="w-4 h-4 mr-2" /> Enter a new address manually
-                        </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleAddNewToAddress}
+                        className="mt-2 w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Enter a new address manually
+                      </Button>
                     )}
                   </div>
                 ) : (
@@ -1161,7 +1117,7 @@ function AuthenticatedCreateShipment() {
                       </Button>
                     )}
                     {savedAddresses.length === 0 && (
-                        <p className="text-sm text-gray-500 mt-2">You have no saved addresses. Please enter recipient details manually.</p>
+                      <p className="text-sm text-gray-500 mt-2">You have no saved addresses. Please enter recipient details manually.</p>
                     )}
                   </>
                 )}
