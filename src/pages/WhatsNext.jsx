@@ -16,7 +16,7 @@ const PROJECTS = [
     name: "Mobile Notary & Shipping",
     tagline: "Ad hoc, white-glove service that comes to you",
     description:
-      "Serviced through tezalconsulting.com until the full site launch in December 2026. Reach out at hello@tezalconsulting.com for more information.",
+      "Notary and business shipping that comes to you: we pick up, label, and ship, or meet you for notarizations. Serviced through tezalconsulting.com until the full site launch in December 2026. Reach out at hello@tezalconsulting.com for more information.",
     comingSoon: true,
   },
   {
