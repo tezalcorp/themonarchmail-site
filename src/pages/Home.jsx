@@ -69,6 +69,7 @@ export default function Home() {
           <div className="mb-10 text-center">
             <Clock className="mx-auto mb-4 h-8 w-8 text-blue-900" />
             <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Hours of Operation</h2>
+            <p className="mt-2 text-lg font-medium text-blue-900">Through November 2026</p>
             <p className="mt-3 text-gray-600">Stone Oak · 20711 Wilderness Oak Ste 107, San Antonio, TX 78258</p>
           </div>
           <dl className="divide-y divide-gray-200 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
