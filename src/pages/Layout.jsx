@@ -55,7 +55,7 @@ export default function Layout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [holidayBannerDismissed, setHolidayBannerDismissed] = React.useState(false);
   const [headerScrolled, setHeaderScrolled] = React.useState(false);
-  const [chatOpen, setChatOpen] = React.useState(false);
+  const [chatOpen, setChatOpen] = React.useState(true);
 
   const upcomingHoliday = getUpcomingHoliday();
 
