@@ -6,9 +6,8 @@ import { ArrowUpRight } from "lucide-react";
 const PROJECTS = [
   {
     name: "Tezal Consulting",
-    tagline: "Shipping, mailouts, business cards, print & marketing, notary, and tech help",
-    description:
-      "After the storefront closes, Tezal Consulting carries on our shipping, printing, notary, and mailout services. It also does websites, automation, integrations, and in-home tech setup.",
+    tagline: "Business services",
+    description: "Including websites, automation, integrations, and in-home tech setup.",
     href: "https://www.tezalconsulting.com",
     cta: "Visit www.tezalconsulting.com",
   },
