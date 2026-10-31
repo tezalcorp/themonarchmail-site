@@ -37,8 +37,9 @@ const PROJECTS = [
   },
   {
     name: "Worthwhile Sessions",
-    tagline: "A new project from our family",
-    description: "Learn more at worthwhilesessions.com.",
+    tagline: "We create the space where worthwhile conversations can happen.",
+    description:
+      "Some of the most meaningful conversations happen in the wrong setting: a crowded reception, a noisy event, a living room with the TV on. Worthwhile Sessions creates an intentional, professionally recorded space where those conversations can unfold with presence and care. Whether it's a father and daughter at a wedding, a family sharing stories across generations, a team conversation at an event, or a private one-on-one session, we prepare the room so the conversation can be heard, remembered, and kept.",
     href: "https://worthwhilesessions.com",
     cta: "Visit worthwhilesessions.com",
   },
