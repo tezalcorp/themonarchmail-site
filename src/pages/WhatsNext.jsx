@@ -6,8 +6,8 @@ import { ArrowUpRight } from "lucide-react";
 const PROJECTS = [
   {
     name: "Tezal Consulting",
-    tagline: "Business services, including websites, automation, systems integrations, and resource planning.",
-    description: "Home services: in-home tech setup.",
+    description: "Business services, including websites, automation, systems integrations, and resource planning.",
+    secondary: "Home services: in-home tech setup.",
     href: "https://www.tezalconsulting.com",
     cta: "Visit www.tezalconsulting.com",
   },
@@ -76,8 +76,9 @@ export default function WhatsNext() {
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-800">Coming soon</span>
               )}
             </div>
-            <p className="mb-3 text-sm font-medium text-blue-900">{project.tagline}</p>
+            {project.tagline && <p className="mb-3 text-sm font-medium text-blue-900">{project.tagline}</p>}
             <p className="flex-1 leading-relaxed text-gray-700">{project.description}</p>
+            {project.secondary && <p className="mt-3 text-sm text-gray-500">{project.secondary}</p>}
             {project.href && (
               <a
                 href={project.href}
