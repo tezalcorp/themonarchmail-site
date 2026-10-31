@@ -24,6 +24,8 @@ import PaymentCancel from "./PaymentCancel";
 
 import UHaulRentals from "./UHaulRentals";
 
+import FAQ from "./FAQ";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -51,7 +53,9 @@ const PAGES = {
     PaymentCancel: PaymentCancel,
     
     UHaulRentals: UHaulRentals,
-    
+
+    FAQ: FAQ,
+
 }
 
 function _getCurrentPage(url) {
@@ -102,6 +106,8 @@ function PagesContent() {
                 <Route path="/PaymentCancel" element={<PaymentCancel />} />
                 
                 <Route path="/UHaulRentals" element={<UHaulRentals />} />
+
+                <Route path="/FAQ" element={<FAQ />} />
                 
             </Routes>
         </Layout>

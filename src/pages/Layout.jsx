@@ -5,6 +5,8 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Package, Home, Calculator, Phone, ShoppingBag, User, ChevronDown, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ClosingPopup from "@/components/ClosingPopup";
+import ClosingChat from "@/components/ClosingChat";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +66,7 @@ export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [holidayBannerDismissed, setHolidayBannerDismissed] = React.useState(false);
   const [headerScrolled, setHeaderScrolled] = React.useState(false);
+  const [chatOpen, setChatOpen] = React.useState(false);
 
   const upcomingHoliday = getUpcomingHoliday();
   
@@ -291,6 +294,7 @@ export default function Layout({ children, currentPageName }) {
               <ul className="space-y-2 text-sm">
                 <li><Link to={createPageUrl("ShippingCalculator")} className="hover:text-white transition-colors">Shipping Calculator</Link></li>
                 <li><Link to={createPageUrl("Store")} className="hover:text-white transition-colors">Online Store</Link></li>
+                <li><Link to={createPageUrl("FAQ")} className="hover:text-white transition-colors">Closing FAQ</Link></li>
                 <li><Link to={createPageUrl("Contact")} className="hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
             </div>
@@ -301,6 +305,9 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
       </footer>
+
+      <ClosingPopup onAskQuestion={() => setChatOpen(true)} />
+      <ClosingChat open={chatOpen} onOpenChange={setChatOpen} />
     </div>
   );
 }
