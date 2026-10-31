@@ -161,9 +161,12 @@ const SECTIONS = [
     items: [
       [
         "How do I contact Monarch Mail?",
-        `By email only: ${EMAIL}. For shipping, print, and notary services after closing, email ${TEAM_EMAIL}.`,
+        `Email ${EMAIL} or text 210.265.5805. For shipping, print, and notary services after closing, email ${TEAM_EMAIL}.`,
       ],
-      ["Is there a phone number I can call?", `No. We can only be reached by email at ${EMAIL}.`],
+      [
+        "Is there a phone number I can call?",
+        `Yes, our number is 210.265.5805. During shipping season and the store closing, calls may be hard to get through, so we prefer email or text. Email ${EMAIL} or text 210.265.5805.`,
+      ],
     ],
   },
 ];
