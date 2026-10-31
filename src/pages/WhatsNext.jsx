@@ -9,14 +9,26 @@ const PROJECTS = [
     tagline: "Shipping, mailouts, business cards, print & marketing, notary, and tech help",
     description:
       "After the storefront closes, Tezal Consulting carries on our shipping, printing, notary, and mailout services. It also does websites, automation, integrations, and in-home tech setup.",
-    href: "https://tezalconsulting.com",
-    cta: "Visit tezalconsulting.com",
+    href: "https://www.tezalconsulting.com",
+    cta: "Visit www.tezalconsulting.com",
   },
   {
     name: "Mobile Notary & Shipping",
     tagline: "Ad hoc, white-glove service that comes to you",
-    description:
-      "Notary and business shipping that comes to you: we pick up, label, and ship, or meet you for notarizations. Serviced through tezalconsulting.com until the full site launch in December 2026. Reach out at hello@tezalconsulting.com for more information.",
+    description: (
+      <>
+        Notary and business shipping that comes to you: we pick up, label, and ship, or meet you for notarizations. Serviced
+        through{" "}
+        <a href="https://www.tezalconsulting.com" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-900 underline">
+          www.tezalconsulting.com
+        </a>{" "}
+        until the full site launch in December 2026. Reach out at{" "}
+        <a href="mailto:hello@tezalconsulting.com" className="font-medium text-blue-900 underline">
+          hello@tezalconsulting.com
+        </a>{" "}
+        for more information.
+      </>
+    ),
     comingSoon: true,
   },
   {
