@@ -63,6 +63,46 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Note from Thomas */}
+      <section className="bg-white py-20">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <h2 className="mb-2 text-3xl font-bold text-gray-900 sm:text-4xl">A Note from Thomas</h2>
+          <p className="mb-8 text-lg text-gray-600">To our Monarch Mail family,</p>
+          <div className="space-y-5 text-lg leading-relaxed text-gray-700">
+            <p>
+              This summer I had a health scare that made me step back and rethink my priorities. I'm recovering well and grateful to be on
+              the mend, and it made one thing clear: I need to be more strategic about the work I take on.
+            </p>
+            <p>
+              A storefront lease ties the business to a fixed location and set hours I'm required to keep. So I made the hard decision not to
+              renew it. Our last day for mail and packages is Wednesday, November 25.
+            </p>
+            <p>
+              Without a lease, I can put my full effort into meaningful work with small business owners and homeowners, making their lives a
+              little simpler and adding real value to their businesses and homes, while also giving me the flexibility to take care of my health.
+            </p>
+            <p>
+              I know this change isn't easy for everyone. Some of you depend on us for your business address, your mail, or a trusted place to
+              ship, and some of you heard the news before I could tell you myself. I'm truly sorry for the disruption and stress this causes. It
+              was never my intention to leave anyone scrambling.
+            </p>
+            <p>
+              Thank you for every package, every mailbox, every print job and every conversation over the years. Many of you have become more
+              than customers. You've become neighbors and friends. Serving this community has meant more than I can say.
+            </p>
+            <p>
+              Curious what's next for our family?{" "}
+              <Link to={createPageUrl("WhatsNext")} className="font-medium text-blue-900 underline">
+                See what we're working on
+              </Link>
+              . We'd love to stay connected.
+            </p>
+          </div>
+          <p className="mt-10 text-lg text-gray-700">With gratitude,</p>
+          <img src="/thomas-signature.png" alt="Thomas Hernandez" className="mt-2 h-20 w-auto" />
+        </div>
+      </section>
+
       {/* Hours */}
       <section className="bg-white py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
