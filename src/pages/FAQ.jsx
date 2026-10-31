@@ -132,7 +132,7 @@ const SECTIONS = [
     items: [
       [
         "Is Monarch Mail going away completely?",
-        "The storefront is closing, but services continue with no storefront (we come to you). Shipping, mailouts, business cards, and print & marketing will be offered through Tezal Consulting (tezalconsulting.com).",
+        "The storefront is closing, but services continue with no storefront (we come to you). Shipping, mailouts, business cards, and print & marketing will be offered through Tezal Consulting (www.tezalconsulting.com).",
       ],
       [
         "How do I request shipping, mailouts, business cards, or print services after closing?",
@@ -148,7 +148,7 @@ const SECTIONS = [
       ],
       [
         "Do you know anyone who can help with websites or tech?",
-        "Yes. Tezal Consulting (tezalconsulting.com) also does websites, automation, integrations, and in-home tech setup.",
+        "Yes. Tezal Consulting (www.tezalconsulting.com) also does websites, automation, integrations, and in-home tech setup.",
       ],
       [
         "Do you know someone for pressure washing?",
