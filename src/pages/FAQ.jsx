@@ -135,12 +135,12 @@ const SECTIONS = [
         "The storefront is closing, but services continue with no storefront (we come to you). Shipping, mailouts, business cards, and print & marketing will be offered through Tezal Consulting (www.tezalconsulting.com).",
       ],
       [
-        "How do I request shipping, mailouts, business cards, or print services after closing?",
-        `Email Tezal Consulting at ${TEAM_EMAIL}.`,
+        "Where can I get shipping or notary after closing?",
+        `For something quick and local, the next closest retail store is The Mailing Spot on Blanco and Huebner. If you are a business owner or have many documents to notarize, Tezal Consulting offers mobile services. Email ${TEAM_EMAIL}.`,
       ],
       [
-        "Will you still offer notary services?",
-        `Yes. Notary services are still offered after closing. Book through Tezal Consulting at ${TEAM_EMAIL}.`,
+        "Where can I get notary services after closing?",
+        `For a few personal documents, The Mailing Spot on Blanco and Huebner is the quickest local option. For a business or many documents, Tezal Consulting offers mobile notary. Book by emailing ${TEAM_EMAIL}.`,
       ],
       [
         "Where can I get custom T-shirts, merch, or swag printed?",
