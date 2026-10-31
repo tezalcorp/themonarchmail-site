@@ -22,7 +22,6 @@ const CLOSURE_DATES = [
     name: "Thanksgiving Day",
     note: "Our last day for retail, mail, and package pickup is Wednesday, November 25.",
   },
-  { date: "2026-12-25", name: "Christmas Day" },
 ];
 
 function dayString(d) {
