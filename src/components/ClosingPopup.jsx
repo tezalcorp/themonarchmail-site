@@ -2,9 +2,20 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { X, AlertCircle } from "lucide-react";
 
+// Shows on every page load until the closing date, then stops on its own.
+// Shows through Wed, Nov 25, 2026 (local date). Hidden from Thu, Nov 26, 2026 on.
+const HIDE_FROM = "2026-11-26";
+
+function todayString() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 // Shows on every page load. Closing it hides it for this page view only.
 export default function ClosingPopup({ onAskQuestion }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => todayString() < HIDE_FROM);
 
   useEffect(() => {
     if (!open) return;
