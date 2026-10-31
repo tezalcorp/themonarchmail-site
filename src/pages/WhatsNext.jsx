@@ -6,6 +6,7 @@ import { ArrowUpRight } from "lucide-react";
 const PROJECTS = [
   {
     name: "Tezal Consulting",
+    tagline: "Tech help for business and home",
     description: "Business services, including websites, automation, systems integrations, and resource planning.",
     secondary: "Home services: in-home tech setup.",
     href: "https://www.tezalconsulting.com",
