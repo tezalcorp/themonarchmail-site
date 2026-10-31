@@ -23,7 +23,8 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-orange-300">Monarch Mail · Stone Oak</p>
             <h1 className="mb-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-              Thank you, <span className="text-orange-400">Stone Oak & San Antonio</span>
+              Thank you<br />
+              <span className="text-orange-400">Stone Oak & San Antonio</span>
             </h1>
             <p className="mx-auto mb-8 max-w-3xl text-lg text-blue-100 sm:text-xl">
               Our storefront is closing after <strong className="text-white">Wednesday, November 25, 2026</strong>.
