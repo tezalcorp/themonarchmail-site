@@ -60,13 +60,13 @@ const PROJECTS = [
 export default function WhatsNext() {
   return (
     <div className="mx-auto max-w-6xl px-4 pb-20 pt-12 sm:px-6 lg:px-8">
-      <header className="mx-auto mb-14 max-w-3xl text-center">
+      <div className="mx-auto mb-14 max-w-3xl text-center">
         <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-orange-600">What's next</p>
         <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">What is next for Thomas and family?</h1>
         <p className="mt-5 text-lg text-gray-700">
           Closing the storefront does not close the work. Here is where our neighbors can find us after November 25, 2026.
         </p>
-      </header>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {PROJECTS.map((project) => (
