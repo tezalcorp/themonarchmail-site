@@ -54,7 +54,6 @@ export default function ClosingPopup({ onAskQuestion }) {
 
         <p className="text-sm text-gray-700">
           Our last day for retail, mail pickup, and package pickup is <strong>Wednesday, November 25, 2026</strong>.
-          Please pick up all mail and packages by end of day, and bring in mailbox keys to avoid a $10 fee.
         </p>
         <p className="mt-3 text-sm text-gray-700">
           Sale-only days for remaining inventory and fixtures: Nov 27, 28, and 30.

@@ -5,11 +5,11 @@ const TEAM_EMAIL = "hello@tezalconsulting.com";
 
 // Turns email addresses in a string into mailto links.
 function Rich({ text }) {
-  const parts = text.split(/(contact@themonarchmail\.com|hello@tezalconsulting\.com)/g);
+  const parts = text.split(/(contact@themonarchmail\.com|hello@tezalconsulting\.com|thomas@tezalconsulting\.com)/g);
   return (
     <>
       {parts.map((part, i) =>
-        part === EMAIL || part === TEAM_EMAIL ? (
+        part === EMAIL || part === TEAM_EMAIL || part === "thomas@tezalconsulting.com" ? (
           <a key={i} href={`mailto:${part}`} className="font-medium text-blue-900 underline">
             {part}
           </a>
@@ -132,15 +132,11 @@ const SECTIONS = [
     items: [
       [
         "Is Monarch Mail going away completely?",
-        "The storefront is closing, but services continue with no storefront (we come to you). Shipping, mailouts, business cards, and print & marketing will be offered through Tezal Consulting (www.tezalconsulting.com).",
+        "The storefront is closing. For most day-to-day services previously offered by Monarch Mail, we recommend The Mailing Spot off of Huebner and Blanco. For special projects, white-glove services are offered through www.tezalconsulting.com.",
       ],
       [
         "Where can I get shipping or notary after closing?",
-        `For something quick and local, the next closest retail store is The Mailing Spot on Blanco and Huebner. If you are a business owner or have many documents to notarize, Tezal Consulting offers mobile services. Email ${TEAM_EMAIL}.`,
-      ],
-      [
-        "Where can I get notary services after closing?",
-        `For a few personal documents, The Mailing Spot on Blanco and Huebner is the quickest local option. For a business or many documents, Tezal Consulting offers mobile notary. Book by emailing ${TEAM_EMAIL}.`,
+        "For most day-to-day services previously offered by Monarch Mail, we recommend The Mailing Spot off of Huebner and Blanco. If this is regarding a special project, white-glove services are offered through www.tezalconsulting.com. You can send an email to thomas@tezalconsulting.com.",
       ],
       [
         "Where can I get custom T-shirts, merch, or swag printed?",
@@ -161,7 +157,7 @@ const SECTIONS = [
     items: [
       [
         "How do I contact Monarch Mail?",
-        `Email ${EMAIL} or text 210.265.5805. For shipping, print, and notary services after closing, email ${TEAM_EMAIL}.`,
+        `Email ${EMAIL} or text 210.265.5805. For special projects, email thomas@tezalconsulting.com.`,
       ],
       [
         "Is there a phone number I can call?",
